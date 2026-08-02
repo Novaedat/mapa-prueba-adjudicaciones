@@ -3,58 +3,78 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Mapa de prueba — adjudicaciones Novaedat</title>
+  <title>Adjudicaciones Novaedat · mapa territorial</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, sans-serif; color: #172033; background: #f4f7fb; }
-    header { padding: 22px 28px; background: #112d4e; color: #fff; }
-    h1 { margin: 0; font-size: 1.35rem; }
-    header p { margin: 6px 0 0; opacity: .82; }
-    #map { height: calc(100vh - 112px); min-height: 520px; }
-    .key { position: fixed; z-index: 1000; right: 18px; bottom: 24px; padding: 14px 16px; background: #fff; border-radius: 10px; box-shadow: 0 3px 18px #0002; font-size: .9rem; }
-    .key div { margin-top: 7px; }
-    .dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 7px; }
-    .open { background: #137a4b; }.pending { background: #db8b00; }.review { background: #536a88; }
-    .popup h2 { margin: 0 0 6px; font-size: 1rem; }.popup p { margin: 4px 0; }
+    :root { --navy:#112d4e; --blue:#1477be; --ink:#172033; }
+    * { box-sizing:border-box; } body { margin:0; font-family:Arial,sans-serif; color:var(--ink); background:#f4f7fb; }
+    header { padding:18px 24px 14px; background:var(--navy); color:#fff; } h1 { margin:0; font-size:1.3rem; }
+    header p { margin:5px 0 0; opacity:.85; } nav { display:flex; gap:8px; margin-top:14px; }
+    button { cursor:pointer; border:1px solid #ffffff66; border-radius:18px; padding:8px 13px; color:#fff; background:#ffffff18; font-weight:700; }
+    button[aria-selected="true"] { background:#fff; color:var(--navy); border-color:#fff; }
+    #map { height:calc(100vh - 137px); min-height:520px; } .legend { position:fixed; z-index:1000; right:18px; bottom:22px; max-width:255px; padding:13px 15px; background:#fffffff2; border-radius:10px; box-shadow:0 3px 18px #0003; font-size:.85rem; }
+    .legend p { margin:7px 0 0; line-height:1.35; }.hospital-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; background:var(--blue); border:1px solid white; }
+    .lot-label { border:0; background:transparent; color:#14243a; font-weight:800; text-align:center; white-space:nowrap; text-shadow:-1px -1px 2px #fff,1px 1px 2px #fff; pointer-events:none; }
+    .municipio-label { border:0; background:transparent; color:#1d2938; font-weight:600; font-size:11px; text-align:center; white-space:nowrap; text-shadow:-1px -1px 2px #fff,1px 1px 2px #fff; pointer-events:none; }
+    .source-note { position:fixed; left:12px; bottom:8px; z-index:1000; padding:3px 5px; font-size:10px; color:#374151; background:#ffffffe0; border-radius:3px; }
   </style>
 </head>
 <body>
   <header>
-    <h1>Adjudicaciones — mapa de prueba</h1>
-    <p>Ejemplo para comprobar la publicación con GitHub Pages.</p>
+    <h1>Adjudicaciones Novaedat · mapa territorial</h1>
+    <p>Áreas sanitarias asignadas; amplía el mapa para ver sus municipios y hospitales.</p>
+    <nav aria-label="Tipo de adjudicación">
+      <button id="adultos" type="button" aria-selected="true">Adultos · 15 lotes</button>
+      <button id="infancia" type="button" aria-selected="false">Infancia y adolescencia · 8 lotes</button>
+    </nav>
   </header>
-  <main id="map" aria-label="Mapa de adjudicaciones de prueba"></main>
-  <aside class="key" aria-label="Leyenda">
-    <strong>Estado</strong>
-    <div><span class="dot open"></span>Contrato firmado</div>
-    <div><span class="dot pending"></span>Adjudicado / pendiente</div>
-    <div><span class="dot review"></span>En revisión</div>
-  </aside>
+  <main id="map" aria-label="Mapa territorial de adjudicaciones"></main>
+  <aside class="legend"><strong>Cómo leer el mapa</strong><p>Cada color identifica un lote. Sus municipios conservan ese mismo color y sus límites se ven en todo momento.</p><p><span class="hospital-dot"></span>Hospital público</p></aside>
+  <div class="source-note">Cartografía: Generalitat Valenciana / ICV · Datos abiertos CC BY</div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
   <script>
-    const map = L.map('map').setView([39.48, -0.45], 8);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18,
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-
-    const lotes = [
-      { nombre: 'Hospital General — Valencia', coords: [39.475, -0.398], estado: 'Contrato firmado', tipo: 'Menores' },
-      { nombre: 'Sagunto', coords: [39.683, -0.277], estado: 'Contrato firmado', tipo: 'Menores' },
-      { nombre: 'Castellón', coords: [39.986, -0.037], estado: 'Contrato firmado', tipo: 'Menores' },
-      { nombre: 'Alicante – San Juan', coords: [38.401, -0.437], estado: 'Contrato firmado', tipo: 'Menores' },
-      { nombre: 'Dénia', coords: [38.841, 0.106], estado: 'Contrato firmado', tipo: 'Menores' },
-      { nombre: 'Gandía', coords: [38.970, -0.185], estado: 'Adjudicado / pendiente', tipo: 'Adultos' },
-      { nombre: 'Elche', coords: [38.266, -0.699], estado: 'Adjudicado / pendiente', tipo: 'Adultos' },
-      { nombre: 'Xàtiva', coords: [38.990, -0.519], estado: 'En revisión', tipo: 'Adultos' }
-    ];
-    const colores = { 'Contrato firmado': '#137a4b', 'Adjudicado / pendiente': '#db8b00', 'En revisión': '#536a88' };
-    lotes.forEach(lote => {
-      L.circleMarker(lote.coords, { radius: 10, color: '#fff', weight: 2, fillColor: colores[lote.estado], fillOpacity: 1 })
-        .bindPopup(`<div class="popup"><h2>${lote.nombre}</h2><p><b>Área:</b> ${lote.tipo}</p><p><b>Estado:</b> ${lote.estado}</p></div>`)
-        .addTo(map);
-    });
+    const map = L.map('map', { zoomControl:true }).setView([39.45, -0.35], 8);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18, attribution:'© OpenStreetMap contributors' }).addTo(map);
+    const palette = ['#8b3a62','#176e92','#b15d20','#518345','#734fb0','#c24d66','#287c6b','#9d6b16','#3d67a8','#9a4d36','#4f7c3f','#8561a5','#187f9e','#b44149','#6d688c'];
+    const loteConfig = {
+      adultos:[
+        [1,'Castellón','02'],[2,'Sagunto','04'],[3,'Clínico','05'],[5,'Hospital General','09'],[6,'Peset','10'],[7,'La Ribera','11'],[8,'Gandia','12'],[9,'Xàtiva','14'],[10,'Alcoi','15'],[11,'Vila-Joiosa','16'],[12,'Alicante San Juan','17'],[15,'Elx','20'],[16,'Orihuela','21'],[17,'Dénia','13'],[18,'Torrevieja','22']
+      ],
+      infancia:[
+        [1,'Castellón','02'],[2,'La Plana','03'],[3,'Sagunto','04'],[7,'General','09'],[9,'La Ribera','11'],[10,'Gandia','12'],[13,'San Juan','17'],[17,'Dénia','13']
+      ]
+    };
+    const utm30 = 'EPSG:25830';
+    proj4.defs(utm30, '+proj=utm +zone=30 +ellps=GRS80 +units=m +no_defs +type=crs');
+    function convertCoordinates(c) { return typeof c[0] === 'number' ? proj4(utm30, 'WGS84', c) : c.map(convertCoordinates); }
+    function convertFeature(f) { return { ...f, geometry:{ ...f.geometry, coordinates:convertCoordinates(f.geometry.coordinates) } }; }
+    function pointInRing(point, ring) { let inside=false; for(let i=0,j=ring.length-1;i<ring.length;j=i++) { const [xi,yi]=ring[i], [xj,yj]=ring[j]; if (((yi>point[1]) !== (yj>point[1])) && point[0] < (xj-xi)*(point[1]-yi)/(yj-yi)+xi) inside=!inside; } return inside; }
+    function containsPoint(point, geometry) { const polygons = geometry.type==='Polygon' ? [geometry.coordinates] : geometry.coordinates; return polygons.some(poly => pointInRing(point,poly[0]) && !poly.slice(1).some(hole => pointInRing(point,hole))); }
+    let source, activeLayers=[];
+    const labels = { lotes:[], municipios:[] };
+    function clearMap() { activeLayers.forEach(layer => map.removeLayer(layer)); activeLayers=[]; labels.lotes.forEach(x=>map.removeLayer(x)); labels.municipios.forEach(x=>map.removeLayer(x)); labels.lotes=[]; labels.municipios=[]; }
+    function addLabel(latlng, text, className, size) { const icon=L.divIcon({className, html:text, iconSize:size, iconAnchor:[size[0]/2,size[1]/2]}); return L.marker(latlng,{icon,interactive:false}); }
+    function updateVisibility() { const close = map.getZoom() >= 10; labels.lotes.forEach(label => label.getElement()?.style.setProperty('opacity', close ? '.36' : '1')); labels.municipios.forEach(label => close ? label.addTo(map) : map.removeLayer(label)); }
+    function draw(kind) {
+      clearMap();
+      const lotes=loteConfig[kind].map(([numero,nombre,departamento],index)=>({numero,nombre,departamento,color:palette[index]}));
+      const byDepartment=Object.fromEntries(lotes.map(x=>[x.departamento,x]));
+      const departments=source.departamentos.features.filter(f=>byDepartment[f.properties.DPTOCRC]);
+      const municipalities=source.municipios.features.filter(f=>byDepartment[f.properties.DPTOCRC]);
+      const departmentLayer=L.geoJSON({type:'FeatureCollection',features:departments},{style:f=>{const l=byDepartment[f.properties.DPTOCRC]; return {color:l.color,weight:2.4,fillColor:l.color,fillOpacity:.20};},onEachFeature:(f,layer)=>{const l=byDepartment[f.properties.DPTOCRC]; layer.bindPopup(`<b>Lote ${l.numero} · ${l.nombre}</b><br>Área: ${kind==='adultos'?'Adultos':'Infancia y adolescencia'}`);}}).addTo(map);
+      activeLayers.push(departmentLayer);
+      const municipalityLayer=L.geoJSON({type:'FeatureCollection',features:municipalities},{style:f=>{const l=byDepartment[f.properties.DPTOCRC]; return {color:'#253346',weight:.75,fillColor:l.color,fillOpacity:.37};},onEachFeature:(f,layer)=>layer.bindPopup(`<b>${f.properties.NOMBRE}</b><br>Lote ${byDepartment[f.properties.DPTOCRC].numero} · ${byDepartment[f.properties.DPTOCRC].nombre}`)}).addTo(map);
+      activeLayers.push(municipalityLayer);
+      departmentLayer.eachLayer(layer=>{const l=byDepartment[layer.feature.properties.DPTOCRC]; const c=layer.getBounds().getCenter(); const label=addLabel(c,`Lote ${l.numero} · ${l.nombre}`,'lot-label',[220,28]); label.addTo(map); labels.lotes.push(label);});
+      municipalityLayer.eachLayer(layer=>{const c=layer.getBounds().getCenter(); const label=addLabel(c,layer.feature.properties.NOMBRE,'municipio-label',[150,18]); labels.municipios.push(label);});
+      source.hospitales.features.filter(h=>departments.some(d=>containsPoint(h.geometry.coordinates,d.geometry))).forEach(h=>{const [lng,lat]=h.geometry.coordinates; const marker=L.circleMarker([lat,lng],{radius:6,color:'#fff',weight:1.5,fillColor:'#1477be',fillOpacity:1}).bindPopup(`<b>${h.properties.CEN_DESCLA}</b><br>${h.properties.CEN_NOMBCA||''}`); marker.addTo(map); activeLayers.push(marker);});
+      map.fitBounds(departmentLayer.getBounds(),{padding:[18,18]}); updateVisibility();
+    }
+    Promise.all(['departamentos-25830.geojson','municipios-25830.geojson','hospitales-25830.geojson'].map(name=>fetch(`datos-mapa/${name}`).then(r=>{if(!r.ok)throw new Error(name);return r.json();}))).then(([d,m,h])=>{source={departamentos:{...d,features:d.features.map(convertFeature)},municipios:{...m,features:m.features.map(convertFeature)},hospitales:{...h,features:h.features.map(convertFeature)}}; draw('adultos');}).catch(()=>alert('No se pudieron cargar las capas cartográficas. Comprueba que la carpeta datos-mapa está junto al HTML.'));
+    document.getElementById('adultos').onclick=()=>{document.getElementById('adultos').setAttribute('aria-selected','true');document.getElementById('infancia').setAttribute('aria-selected','false');draw('adultos');};
+    document.getElementById('infancia').onclick=()=>{document.getElementById('infancia').setAttribute('aria-selected','true');document.getElementById('adultos').setAttribute('aria-selected','false');draw('infancia');};
+    map.on('zoomend',updateVisibility);
   </script>
 </body>
 </html>
