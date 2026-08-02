@@ -68,10 +68,27 @@
     function pointInRing(point, ring) { let inside=false; for(let i=0,j=ring.length-1;i<ring.length;j=i++) { const [xi,yi]=ring[i], [xj,yj]=ring[j]; if (((yi>point[1]) !== (yj>point[1])) && point[0] < (xj-xi)*(point[1]-yi)/(yj-yi)+xi) inside=!inside; } return inside; }
     function containsPoint(point, geometry) { const polygons = geometry.type==='Polygon' ? [geometry.coordinates] : geometry.coordinates; return polygons.some(poly => pointInRing(point,poly[0]) && !poly.slice(1).some(hole => pointInRing(point,hole))); }
     let source, activeLayers=[];
+    let hospitalesPorDepartamento={};
     const labels = { lotes:[], municipios:[] };
     function clearMap() { activeLayers.forEach(layer => map.removeLayer(layer)); activeLayers=[]; labels.lotes.forEach(x=>map.removeLayer(x)); labels.municipios.forEach(x=>map.removeLayer(x)); labels.lotes=[]; labels.municipios=[]; }
     function addLabel(latlng, text, className, size) { const icon=L.divIcon({className, html:text, iconSize:size, iconAnchor:[size[0]/2,size[1]/2]}); return L.marker(latlng,{icon,interactive:false}); }
     function showLotePanel(l, kind) { const d=loteDetails[kind][l.numero]||{}; const area=kind==='adultos'?'Adultos':'Infancia y adolescencia'; const val=x=>x||'Sin datos registrados'; const optional=d.prevision?`<div class="fact"><dt>Previsión</dt><dd>${d.prevision}</dd></div>`:''; const auth=d.autorizacion?`<div class="fact"><dt>Autorización GVA</dt><dd>${d.autorizacion}</dd></div>`:''; const note=d.observaciones?`<div class="panel-section"><h3>Observaciones</h3><p class="address">${d.observaciones}</p></div>`:''; const address=d.direccion?d.direccion:'Sin dirección de local registrada'; const p=document.getElementById('lote-panel'); p.innerHTML=`<button id="close-panel" type="button" aria-label="Cerrar ficha">×</button><h2>Lote ${l.numero} · ${l.nombre}</h2><p class="area">${area}</p><div class="facts"><div class="fact"><dt>Locales</dt><dd>${val(d.locales)}</dd></div><div class="fact"><dt>Estado LIC</dt><dd>${val(d.lic)}</dd></div><div class="fact"><dt>TACRC</dt><dd>${val(d.tacrc)}</dd></div>${optional}${auth}</div><div class="panel-section"><h3>Dirección del local</h3><p class="address ${d.direccion?'':'empty'}">${address}</p></div>${note}`; p.classList.add('open'); document.getElementById('close-panel').onclick=()=>p.classList.remove('open'); }
+    function showLotePanel(l, kind) {
+      const d=loteDetails[kind][l.numero]||{};
+      const area=kind==='adultos'?'Adultos':'Infancia y adolescencia';
+      const val=x=>x||'Sin datos registrados';
+      const facts=[['Locales',val(d.locales)],['Estado LIC',val(d.lic)],['TACRC',val(d.tacrc)]];
+      if(d.prevision)facts.push(['Previsión',d.prevision]);
+      if(d.autorizacion)facts.push(['Autorización GVA',d.autorizacion]);
+      const hospitals=hospitalesPorDepartamento[l.departamento]||[];
+      const hospitalHtml=hospitals.length ? hospitals.map(h=>{const x=h.properties; const location=[x.CEN_NOMBCA,x.CEN_NUMCAL,x.CEN_CODPOS].filter(Boolean).join(' · '); return `<p class="address"><strong>${x.CEN_DESCLA}</strong><br>${location||'Ubicación no registrada'}</p>`;}).join('') : '<p class="address empty">Sin hospital registrado para esta zona</p>';
+      const address=d.direccion||'Sin dirección de local registrada';
+      const note=d.observaciones?`<div class="panel-section"><h3>Observaciones</h3><p class="address">${d.observaciones}</p></div>`:'';
+      const p=document.getElementById('lote-panel');
+      p.innerHTML=`<button id="close-panel" type="button" aria-label="Cerrar ficha">×</button><h2>Lote ${l.numero} · ${l.nombre}</h2><p class="area">${area}</p><div class="facts">${facts.map(([label,value])=>`<div class="fact"><dt>${label}</dt><dd>${value}</dd></div>`).join('')}</div><div class="panel-section"><h3>Dirección del local</h3><p class="address ${d.direccion?'':'empty'}">${address}</p></div><div class="panel-section"><h3>Hospital de referencia</h3>${hospitalHtml}</div>${note}`;
+      p.classList.add('open');
+      document.getElementById('close-panel').onclick=()=>p.classList.remove('open');
+    }
     function updateVisibility() { const close = map.getZoom() >= 10; labels.lotes.forEach(label => label.getElement()?.style.setProperty('opacity', close ? '.36' : '1')); labels.municipios.forEach(label => close ? label.addTo(map) : map.removeLayer(label)); }
     function draw(kind) {
       clearMap();
@@ -79,6 +96,7 @@
       const byDepartment=Object.fromEntries(lotes.map(x=>[x.departamento,x]));
       const departments=source.departamentos.features.filter(f=>byDepartment[f.properties.DPTOCRC]);
       const municipalities=source.municipios.features.filter(f=>byDepartment[f.properties.DPTOCRC]);
+      hospitalesPorDepartamento=Object.fromEntries(lotes.map(l=>[l.departamento,source.hospitales.features.filter(h=>String(h.properties.ARS_CODI).padStart(2,'0')===l.departamento)]));
       const departmentLayer=L.geoJSON({type:'FeatureCollection',features:departments},{style:f=>{const l=byDepartment[f.properties.DPTOCRC]; return {color:l.color,weight:2.4,fillColor:l.color,fillOpacity:.20};},onEachFeature:(f,layer)=>{const l=byDepartment[f.properties.DPTOCRC]; layer.bindPopup(`<b>Lote ${l.numero} · ${l.nombre}</b><br>Área: ${kind==='adultos'?'Adultos':'Infancia y adolescencia'}`);}}).addTo(map);
       activeLayers.push(departmentLayer);
       const municipalityLayer=L.geoJSON({type:'FeatureCollection',features:municipalities},{style:f=>{const l=byDepartment[f.properties.DPTOCRC]; return {color:'#253346',weight:.75,fillColor:l.color,fillOpacity:.37};},onEachFeature:(f,layer)=>layer.on('click',()=>showLotePanel(byDepartment[f.properties.DPTOCRC],kind))}).addTo(map);
