@@ -17,6 +17,13 @@
     .lot-label { border:0; background:transparent; color:#14243a; font-weight:800; text-align:center; white-space:nowrap; text-shadow:-1px -1px 2px #fff,1px 1px 2px #fff; pointer-events:none; }
     .municipio-label { border:0; background:transparent; color:#1d2938; font-weight:600; font-size:11px; text-align:center; white-space:nowrap; text-shadow:-1px -1px 2px #fff,1px 1px 2px #fff; pointer-events:none; }
     .source-note { position:fixed; left:12px; bottom:8px; z-index:1000; padding:3px 5px; font-size:10px; color:#374151; background:#ffffffe0; border-radius:3px; }
+    #lote-panel { position:fixed; z-index:1100; top:150px; left:16px; width:min(365px,calc(100vw - 32px)); max-height:calc(100vh - 180px); overflow:auto; padding:18px; color:#152238; background:#fffffff5; border-radius:14px; box-shadow:0 8px 28px #0003; transform:translateX(calc(-100% - 24px)); transition:transform .24s ease; }
+    #lote-panel.open { transform:translateX(0); } #lote-panel h2 { margin:0 34px 3px 0; font-size:1.16rem; } #lote-panel .area { margin:0 0 16px; color:#536277; font-weight:700; font-size:.86rem; }
+    #close-panel { position:absolute; top:12px; right:12px; width:30px; height:30px; padding:0; border:0; border-radius:50%; color:#34445a; background:#e8eef6; font-size:18px; }
+    .panel-section { margin-top:14px; padding-top:13px; border-top:1px solid #dce5f0; } .panel-section h3 { margin:0 0 8px; font-size:.84rem; color:#536277; text-transform:uppercase; letter-spacing:.04em; }
+    .facts { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:0; } .fact { padding:9px; border-radius:9px; background:#f2f6fa; } .fact dt { color:#63748a; font-size:.72rem; font-weight:700; } .fact dd { margin:3px 0 0; font-size:.9rem; font-weight:700; }
+    .address { margin:0; line-height:1.45; } .empty { color:#6b7788; font-style:italic; }
+    @media (max-width:640px) { #lote-panel { top:auto; bottom:18px; max-height:58vh; } }
   </style>
 </head>
 <body>
@@ -29,6 +36,7 @@
     </nav>
   </header>
   <main id="map" aria-label="Mapa territorial de adjudicaciones"></main>
+  <aside id="lote-panel" aria-live="polite" aria-label="Ficha del lote"></aside>
   <aside class="legend"><strong>Cómo leer el mapa</strong><p>Cada color identifica un lote. Sus municipios conservan ese mismo color y sus límites se ven en todo momento.</p><p><span class="hospital-dot"></span>Hospital público</p></aside>
   <div class="source-note">Cartografía: Generalitat Valenciana / ICV · Datos abiertos CC BY</div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -45,6 +53,14 @@
         [1,'Castellón','02'],[2,'La Plana','03'],[3,'Sagunto','04'],[7,'General','09'],[9,'La Ribera','11'],[10,'Gandia','12'],[13,'San Juan','17'],[17,'Dénia','13']
       ]
     };
+    const loteDetails = {
+      adultos:{
+        1:{locales:'No',lic:'Adjudicado',tacrc:'Suspendido'},2:{locales:'No',lic:'Adjudicado',tacrc:'Levantado',prevision:'03/08/2026'},3:{locales:'Sí',lic:'Adjudicado',tacrc:'Suspendido',direccion:'C/ Polo y Peylorón, 18 · Bajo · 46021 Valencia'},5:{locales:'No',lic:'Adjudicado',tacrc:'Levantado',prevision:'03/08/2026',direccion:'C/ Azcárraga, 37 · Propuesta'},6:{locales:'No',lic:'Adjudicado',tacrc:'Suspendido',direccion:'C/ Polo y Peylorón, 18 · PB derecha · 46021 Valencia'},7:{locales:'Sí',lic:'Adjudicado',tacrc:'Levantado',prevision:'03/08/2026',direccion:"C/ O'Donnell, 31 · 46600 Alzira"},8:{locales:'No',lic:'Adjudicado',prevision:'1–10 sept.'},9:{locales:'Sí',lic:'Adjudicado',tacrc:'Suspendido',direccion:'C/ Félix J. Martínez, 31 · Bajo 2; C/ Montesa, 14 · 46800 Xàtiva'},10:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/08',prevision:'1–10 sept.'},11:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/09',prevision:'1–10 sept.'},12:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/10',prevision:'1–10 sept.'},15:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/08',prevision:'1–10 sept.'},16:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/09',prevision:'1–10 sept.'},17:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/10',prevision:'1–10 sept.'},18:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/11',prevision:'1–10 sept.'}
+      },
+      infancia:{
+        1:{locales:'Sí',lic:'Contrato',autorizacion:'Sí',direccion:'C/ Bellver, 22 · Entresuelo · 12003 Castellón'},2:{locales:'Sí',lic:'Contrato'},3:{locales:'Sí',lic:'Contrato',autorizacion:'Sí',direccion:'Av. Juan de Austria, 26 · Piso A · 46520 Puerto de Sagunto'},7:{locales:'Sí',lic:'Contrato',autorizacion:'Sí',direccion:'C/ Azcárraga, 37 · 46008 Valencia'},9:{locales:'No',lic:'Pendiente de adjudicación'},10:{locales:'No',lic:'Pendiente de adjudicación'},13:{locales:'No',lic:'Contrato',observaciones:'Muxamel'},17:{locales:'No',lic:'Contrato',observaciones:'Dr. Jesús'}
+      }
+    };
     const utm30 = 'EPSG:25830';
     proj4.defs(utm30, '+proj=utm +zone=30 +ellps=GRS80 +units=m +no_defs +type=crs');
     function convertCoordinates(c) { return typeof c[0] === 'number' ? proj4(utm30, 'WGS84', c) : c.map(convertCoordinates); }
@@ -55,6 +71,7 @@
     const labels = { lotes:[], municipios:[] };
     function clearMap() { activeLayers.forEach(layer => map.removeLayer(layer)); activeLayers=[]; labels.lotes.forEach(x=>map.removeLayer(x)); labels.municipios.forEach(x=>map.removeLayer(x)); labels.lotes=[]; labels.municipios=[]; }
     function addLabel(latlng, text, className, size) { const icon=L.divIcon({className, html:text, iconSize:size, iconAnchor:[size[0]/2,size[1]/2]}); return L.marker(latlng,{icon,interactive:false}); }
+    function showLotePanel(l, kind) { const d=loteDetails[kind][l.numero]||{}; const area=kind==='adultos'?'Adultos':'Infancia y adolescencia'; const val=x=>x||'Sin datos registrados'; const optional=d.prevision?`<div class="fact"><dt>Previsión</dt><dd>${d.prevision}</dd></div>`:''; const auth=d.autorizacion?`<div class="fact"><dt>Autorización GVA</dt><dd>${d.autorizacion}</dd></div>`:''; const note=d.observaciones?`<div class="panel-section"><h3>Observaciones</h3><p class="address">${d.observaciones}</p></div>`:''; const address=d.direccion?d.direccion:'Sin dirección de local registrada'; const p=document.getElementById('lote-panel'); p.innerHTML=`<button id="close-panel" type="button" aria-label="Cerrar ficha">×</button><h2>Lote ${l.numero} · ${l.nombre}</h2><p class="area">${area}</p><div class="facts"><div class="fact"><dt>Locales</dt><dd>${val(d.locales)}</dd></div><div class="fact"><dt>Estado LIC</dt><dd>${val(d.lic)}</dd></div><div class="fact"><dt>TACRC</dt><dd>${val(d.tacrc)}</dd></div>${optional}${auth}</div><div class="panel-section"><h3>Dirección del local</h3><p class="address ${d.direccion?'':'empty'}">${address}</p></div>${note}`; p.classList.add('open'); document.getElementById('close-panel').onclick=()=>p.classList.remove('open'); }
     function updateVisibility() { const close = map.getZoom() >= 10; labels.lotes.forEach(label => label.getElement()?.style.setProperty('opacity', close ? '.36' : '1')); labels.municipios.forEach(label => close ? label.addTo(map) : map.removeLayer(label)); }
     function draw(kind) {
       clearMap();
@@ -64,7 +81,7 @@
       const municipalities=source.municipios.features.filter(f=>byDepartment[f.properties.DPTOCRC]);
       const departmentLayer=L.geoJSON({type:'FeatureCollection',features:departments},{style:f=>{const l=byDepartment[f.properties.DPTOCRC]; return {color:l.color,weight:2.4,fillColor:l.color,fillOpacity:.20};},onEachFeature:(f,layer)=>{const l=byDepartment[f.properties.DPTOCRC]; layer.bindPopup(`<b>Lote ${l.numero} · ${l.nombre}</b><br>Área: ${kind==='adultos'?'Adultos':'Infancia y adolescencia'}`);}}).addTo(map);
       activeLayers.push(departmentLayer);
-      const municipalityLayer=L.geoJSON({type:'FeatureCollection',features:municipalities},{style:f=>{const l=byDepartment[f.properties.DPTOCRC]; return {color:'#253346',weight:.75,fillColor:l.color,fillOpacity:.37};},onEachFeature:(f,layer)=>layer.bindPopup(`<b>${f.properties.NOMBRE}</b><br>Lote ${byDepartment[f.properties.DPTOCRC].numero} · ${byDepartment[f.properties.DPTOCRC].nombre}`)}).addTo(map);
+      const municipalityLayer=L.geoJSON({type:'FeatureCollection',features:municipalities},{style:f=>{const l=byDepartment[f.properties.DPTOCRC]; return {color:'#253346',weight:.75,fillColor:l.color,fillOpacity:.37};},onEachFeature:(f,layer)=>layer.on('click',()=>showLotePanel(byDepartment[f.properties.DPTOCRC],kind))}).addTo(map);
       activeLayers.push(municipalityLayer);
       departmentLayer.eachLayer(layer=>{const l=byDepartment[layer.feature.properties.DPTOCRC]; const c=layer.getBounds().getCenter(); const label=addLabel(c,`Lote ${l.numero} · ${l.nombre}`,'lot-label',[220,28]); label.addTo(map); labels.lotes.push(label);});
       municipalityLayer.eachLayer(layer=>{const c=layer.getBounds().getCenter(); const label=addLabel(c,layer.feature.properties.NOMBRE,'municipio-label',[150,18]); labels.municipios.push(label);});
