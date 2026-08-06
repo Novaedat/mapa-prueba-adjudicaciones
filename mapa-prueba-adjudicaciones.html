@@ -6,14 +6,14 @@
   <title>Adjudicaciones Novaedat · mapa territorial</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
-    :root { --navy:#112d4e; --blue:#1477be; --ink:#172033; }
+    :root { --navy:#112d4e; --blue:#1477be; --local-yellow:#ffc72c; --ink:#172033; }
     * { box-sizing:border-box; } body { margin:0; font-family:Arial,sans-serif; color:var(--ink); background:#f4f7fb; }
     header { padding:18px 24px 14px; background:var(--navy); color:#fff; } h1 { margin:0; font-size:1.3rem; }
     header p { margin:5px 0 0; opacity:.85; } nav { display:flex; gap:8px; margin-top:14px; }
     button { cursor:pointer; border:1px solid #ffffff66; border-radius:18px; padding:8px 13px; color:#fff; background:#ffffff18; font-weight:700; }
     button[aria-selected="true"] { background:#fff; color:var(--navy); border-color:#fff; }
     #map { height:calc(100vh - 137px); min-height:520px; } .legend { position:fixed; z-index:1000; right:18px; bottom:22px; max-width:255px; padding:13px 15px; background:#fffffff2; border-radius:10px; box-shadow:0 3px 18px #0003; font-size:.85rem; }
-    .legend p { margin:7px 0 0; line-height:1.35; }.hospital-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; background:var(--blue); border:1px solid white; }
+    .legend p { margin:7px 0 0; line-height:1.35; }.hospital-dot,.local-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; border:1px solid white; }.hospital-dot { background:var(--blue); }.local-dot { background:var(--local-yellow); }
     .lot-label { border:0; background:transparent; color:#14243a; font-weight:800; text-align:center; white-space:nowrap; text-shadow:-1px -1px 2px #fff,1px 1px 2px #fff; pointer-events:none; }
     .municipio-label { border:0; background:transparent; color:#1d2938; font-weight:600; font-size:11px; text-align:center; white-space:nowrap; text-shadow:-1px -1px 2px #fff,1px 1px 2px #fff; pointer-events:none; }
     .source-note { position:fixed; left:12px; bottom:8px; z-index:1000; padding:3px 5px; font-size:10px; color:#374151; background:#ffffffe0; border-radius:3px; }
@@ -37,8 +37,8 @@
   </header>
   <main id="map" aria-label="Mapa territorial de adjudicaciones"></main>
   <aside id="lote-panel" aria-live="polite" aria-label="Ficha del lote"></aside>
-  <aside class="legend"><strong>Cómo leer el mapa</strong><p>Cada color identifica un lote. Sus municipios conservan ese mismo color y sus límites se ven en todo momento.</p><p><span class="hospital-dot"></span>Hospital público</p></aside>
-  <div class="source-note">Cartografía: Generalitat Valenciana / ICV · Datos abiertos CC BY</div>
+  <aside class="legend"><strong>Cómo leer el mapa</strong><p>Cada color identifica un lote. Sus municipios conservan ese mismo color y sus límites se ven en todo momento.</p><p><span class="hospital-dot"></span>Hospital público</p><p><span class="local-dot"></span>Local NOVAEDAT</p></aside>
+  <div class="source-note">Cartografía: Generalitat Valenciana / ICV y Conselleria de Sanitat · Datos abiertos CC BY</div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
   <script>
@@ -55,10 +55,10 @@
     };
     const loteDetails = {
       adultos:{
-        1:{locales:'No',lic:'Adjudicado',tacrc:'Suspendido'},2:{locales:'No',lic:'Contrato firmado',tacrc:'Levantado'},3:{locales:'Sí',lic:'Adjudicado',tacrc:'Suspendido',direccion:'C/ Polo y Peylorón, 18 · Bajos izquierdo y derecho · 46021 València'},5:{locales:'En proceso de cierre',lic:'Contrato firmado',tacrc:'Levantado',direccion:'C/ Duque de Gaeta, 39 · Izquierda · 46022 Valencia'},6:{locales:'No',lic:'Adjudicado',tacrc:'Suspendido',observaciones:'Nuevo local en zona'},7:{locales:'Sí',lic:'Contrato firmado',tacrc:'Levantado',direccion:"C/ O'Donnell, 31 · Bajo · 46600 Alzira (Valencia)"},8:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/08',prevision:'1–10 sept.'},9:{locales:'Sí',lic:'Adjudicado',tacrc:'Suspendido',direccion:'C/ Félix J. Martínez, 31 · 46800 Xàtiva (Valencia)'},10:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/08',prevision:'1–10 sept.'},11:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/08',prevision:'1–10 sept.'},12:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/08',prevision:'1–10 sept.'},15:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/08',prevision:'1–10 sept.'},16:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/08',prevision:'1–10 sept.'},17:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/08',prevision:'1–10 sept.'},18:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/08',prevision:'1–10 sept.'}
+        1:{locales:'No',lic:'Adjudicado',tacrc:'Suspendido'},2:{locales:'No',lic:'Contrato firmado',tacrc:'Levantado'},3:{locales:'Sí',lic:'Adjudicado',tacrc:'Suspendido',direccion:'C/ Polo y Peylorón, 18 · Bajos izquierdo y derecho · 46021 València',coordenadas:[39.472754,-0.355204]},5:{locales:'En proceso de cierre',lic:'Contrato firmado',tacrc:'Levantado',direccion:'C/ Duque de Gaeta, 39 · Izquierda · 46022 Valencia',coordenadas:[39.468089,-0.349284]},6:{locales:'No',lic:'Adjudicado',tacrc:'Suspendido',observaciones:'Nuevo local en zona'},7:{locales:'Sí',lic:'Contrato firmado',tacrc:'Levantado',direccion:"C/ O'Donnell, 31 · Bajo · 46600 Alzira (Valencia)",coordenadas:[39.147985,-0.433825]},8:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/08',prevision:'1–10 sept.'},9:{locales:'Sí',lic:'Adjudicado',tacrc:'Suspendido',direccion:'C/ Félix J. Martínez, 31 · 46800 Xàtiva (Valencia)',coordenadas:[38.985262,-0.530761]},10:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/08',prevision:'1–10 sept.'},11:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/08',prevision:'1–10 sept.'},12:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/08',prevision:'1–10 sept.'},15:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/08',prevision:'1–10 sept.'},16:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/08',prevision:'1–10 sept.'},17:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/08',prevision:'1–10 sept.'},18:{locales:'No',lic:'Adjudicado',tacrc:'Pendiente 18/08',prevision:'1–10 sept.'}
       },
       infancia:{
-        1:{locales:'Sí',lic:'Contrato',autorizacion:'Sí',direccion:'C/ Bellver, 22 · Entresuelo 3 · 12003 Castelló de la Plana'},2:{locales:'Sí',lic:'Contrato',direccion:'C/ San Manuel, 67 · Bajo · Vila-real (Castellón)'},3:{locales:'Sí',lic:'Contrato',autorizacion:'Sí',direccion:'Av. Juan de Austria, 26 · Piso A · Sagunto (Valencia)'},7:{locales:'Sí',lic:'Contrato',autorizacion:'Sí',direccion:'C/ Azcárraga, 37 · Bajo · 46008 Valencia'},9:{locales:'No',lic:'Pendiente de adjudicación'},10:{locales:'No',lic:'Pendiente de adjudicación'},13:{locales:'No',lic:'Contrato',observaciones:'Muxamel'},17:{locales:'No',lic:'Contrato',observaciones:'Dr. Jesús'}
+        1:{locales:'Sí',lic:'Contrato',autorizacion:'Sí',direccion:'C/ Bellver, 22 · Entresuelo 3 · 12003 Castelló de la Plana',coordenadas:[39.983239,-0.034393]},2:{locales:'Sí',lic:'Contrato',direccion:'C/ San Manuel, 67 · Bajo · Vila-real (Castellón)',coordenadas:[39.936959,-0.108105]},3:{locales:'Sí',lic:'Contrato',autorizacion:'Sí',direccion:'Av. Juan de Austria, 26 · Piso A · Sagunto (Valencia)',coordenadas:[39.666240,-0.235209]},7:{locales:'Sí',lic:'Contrato',autorizacion:'Sí',direccion:'C/ Azcárraga, 37 · Bajo · 46008 Valencia',coordenadas:[39.474073,-0.391001]},9:{locales:'No',lic:'Pendiente de adjudicación'},10:{locales:'No',lic:'Pendiente de adjudicación'},13:{locales:'No',lic:'Contrato',observaciones:'Muxamel'},17:{locales:'No',lic:'Contrato',observaciones:'Dr. Jesús'}
       }
     };
     const utm30 = 'EPSG:25830';
@@ -95,18 +95,23 @@
       const lotes=loteConfig[kind].map(([numero,nombre,departamento],index)=>({numero,nombre,departamento,color:palette[index]}));
       const byDepartment=Object.fromEntries(lotes.map(x=>[x.departamento,x]));
       const departments=source.departamentos.features.filter(f=>byDepartment[f.properties.DPTOCRC]);
-      const municipalities=source.municipios.features.filter(f=>byDepartment[f.properties.DPTOCRC]);
+      const municipalities=source.municipios.features.filter(f=>f.properties.MUNIINE!=='46250'&&byDepartment[f.properties.DPTOCRC]);
+      const valenciaHealthZones=source.zonasValencia.features.filter(f=>byDepartment[f.properties.DPTOCRC]);
       hospitalesPorDepartamento=Object.fromEntries(lotes.map(l=>[l.departamento,source.hospitales.features.filter(h=>String(h.properties.ARS_CODI).padStart(2,'0')===l.departamento)]));
       const departmentLayer=L.geoJSON({type:'FeatureCollection',features:departments},{style:f=>{const l=byDepartment[f.properties.DPTOCRC]; return {color:l.color,weight:2.4,fillColor:l.color,fillOpacity:.20};},onEachFeature:(f,layer)=>{const l=byDepartment[f.properties.DPTOCRC]; layer.bindPopup(`<b>Lote ${l.numero} · ${l.nombre}</b><br>Área: ${kind==='adultos'?'Adultos':'Infancia y adolescencia'}`);}}).addTo(map);
       activeLayers.push(departmentLayer);
       const municipalityLayer=L.geoJSON({type:'FeatureCollection',features:municipalities},{style:f=>{const l=byDepartment[f.properties.DPTOCRC]; return {color:'#253346',weight:.75,fillColor:l.color,fillOpacity:.37};},onEachFeature:(f,layer)=>layer.on('click',()=>showLotePanel(byDepartment[f.properties.DPTOCRC],kind))}).addTo(map);
       activeLayers.push(municipalityLayer);
+      const valenciaHealthZoneLayer=L.geoJSON({type:'FeatureCollection',features:valenciaHealthZones},{style:f=>{const l=byDepartment[f.properties.DPTOCRC]; return {color:'#253346',weight:.75,fillColor:l.color,fillOpacity:.37};},onEachFeature:(f,layer)=>{const l=byDepartment[f.properties.DPTOCRC]; layer.bindPopup(`<b>${f.properties.NOMBRE}</b><br>Lote ${l.numero} · ${l.nombre}`); layer.on('click',()=>showLotePanel(l,kind));}}).addTo(map);
+      activeLayers.push(valenciaHealthZoneLayer);
       departmentLayer.eachLayer(layer=>{const l=byDepartment[layer.feature.properties.DPTOCRC]; const c=layer.getBounds().getCenter(); const label=addLabel(c,`Lote ${l.numero} · ${l.nombre}`,'lot-label',[220,28]); label.addTo(map); labels.lotes.push(label);});
       municipalityLayer.eachLayer(layer=>{const c=layer.getBounds().getCenter(); const label=addLabel(c,layer.feature.properties.NOMBRE,'municipio-label',[150,18]); labels.municipios.push(label);});
+      valenciaHealthZoneLayer.eachLayer(layer=>{const c=layer.getBounds().getCenter(); const label=addLabel(c,layer.feature.properties.NOMBRE,'municipio-label',[180,18]); labels.municipios.push(label);});
       source.hospitales.features.filter(h=>departments.some(d=>containsPoint(h.geometry.coordinates,d.geometry))).forEach(h=>{const [lng,lat]=h.geometry.coordinates; const marker=L.circleMarker([lat,lng],{radius:6,color:'#fff',weight:1.5,fillColor:'#1477be',fillOpacity:1}).bindPopup(`<b>${h.properties.CEN_DESCLA}</b><br>${h.properties.CEN_NOMBCA||''}`); marker.addTo(map); activeLayers.push(marker);});
+      lotes.forEach(l=>{const d=loteDetails[kind][l.numero]||{}; if(!d.direccion||!Array.isArray(d.coordenadas))return; const marker=L.circleMarker(d.coordenadas,{radius:6,color:'#fff',weight:1.5,fillColor:'#ffc72c',fillOpacity:1}).bindPopup(`<b>Local NOVAEDAT · Lote ${l.numero}</b><br>${d.direccion}`); marker.on('click',()=>showLotePanel(l,kind)); marker.addTo(map); activeLayers.push(marker);});
       map.fitBounds(departmentLayer.getBounds(),{padding:[18,18]}); updateVisibility();
     }
-    Promise.all(['departamentos-25830.geojson','municipios-25830.geojson','hospitales-25830.geojson'].map(name=>fetch(`datos-mapa/${name}`).then(r=>{if(!r.ok)throw new Error(name);return r.json();}))).then(([d,m,h])=>{source={departamentos:{...d,features:d.features.map(convertFeature)},municipios:{...m,features:m.features.map(convertFeature)},hospitales:{...h,features:h.features.map(convertFeature)}}; draw('adultos');}).catch(()=>alert('No se pudieron cargar las capas cartográficas. Comprueba que la carpeta datos-mapa está junto al HTML.'));
+    Promise.all(['departamentos-25830.geojson','municipios-25830.geojson','hospitales-25830.geojson','zonas-salud-valencia-25830.geojson'].map(name=>fetch(`datos-mapa/${name}`).then(r=>{if(!r.ok)throw new Error(name);return r.json();}))).then(([d,m,h,z])=>{source={departamentos:{...d,features:d.features.map(convertFeature)},municipios:{...m,features:m.features.map(convertFeature)},hospitales:{...h,features:h.features.map(convertFeature)},zonasValencia:{...z,features:z.features.map(convertFeature)}}; draw('adultos');}).catch(()=>alert('No se pudieron cargar las capas cartográficas. Comprueba que la carpeta datos-mapa está junto al HTML.'));
     document.getElementById('adultos').onclick=()=>{document.getElementById('adultos').setAttribute('aria-selected','true');document.getElementById('infancia').setAttribute('aria-selected','false');draw('adultos');};
     document.getElementById('infancia').onclick=()=>{document.getElementById('infancia').setAttribute('aria-selected','true');document.getElementById('adultos').setAttribute('aria-selected','false');draw('infancia');};
     map.on('zoomend',updateVisibility);
