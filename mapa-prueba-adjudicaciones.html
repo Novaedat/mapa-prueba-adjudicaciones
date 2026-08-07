@@ -95,7 +95,7 @@
       const lotes=loteConfig[kind].map(([numero,nombre,departamento],index)=>({numero,nombre,departamento,color:palette[index]}));
       const byDepartment=Object.fromEntries(lotes.map(x=>[x.departamento,x]));
       const departments=source.departamentos.features.filter(f=>byDepartment[f.properties.DPTOCRC]);
-      const splitMunicipalities=new Set(['46250','03014']);
+      const splitMunicipalities=new Set(['46250','03014','03065','03099','03121','03133']);
       const municipalities=source.municipios.features.filter(f=>!splitMunicipalities.has(f.properties.MUNIINE)&&byDepartment[f.properties.DPTOCRC]);
       const detailedHealthZones=[...source.zonasValencia.features,...source.zonasAlicante.features].filter(f=>byDepartment[f.properties.DPTOCRC]);
       hospitalesPorDepartamento=Object.fromEntries(lotes.map(l=>[l.departamento,source.hospitales.features.filter(h=>String(h.properties.ARS_CODI).padStart(2,'0')===l.departamento)]));
