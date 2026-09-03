@@ -83,6 +83,7 @@
         17:{locales:'Sí',lic:'Contrato',prevision:'19 oct. 2026',tasas:'Requerido',direccion:'C/ Beniarmut, 1 · 03700 Dénia (Alicante)',coordenadas:[38.840780,0.105740]}
       }
     };
+    const loteLabelCoordinates={infancia:{5:[39.66,-0.72]}};
     const utm30 = 'EPSG:25830';
     proj4.defs(utm30, '+proj=utm +zone=30 +ellps=GRS80 +units=m +no_defs +type=crs');
     function convertCoordinates(c) { return typeof c[0] === 'number' ? proj4(utm30, 'WGS84', c) : c.map(convertCoordinates); }
@@ -129,7 +130,7 @@
       activeLayers.push(municipalityLayer);
       const detailedHealthZoneLayer=L.geoJSON({type:'FeatureCollection',features:detailedHealthZones},{style:{color:'#253346',weight:.75,fillOpacity:0},onEachFeature:(f,layer)=>{const l=byDepartment[f.properties.DPTOCRC]; layer.bindPopup(`<b>${f.properties.NOMBRE}</b><br>${loteTitle(l)}`); layer.on('click',()=>showLotePanel(l,kind));}}).addTo(map);
       activeLayers.push(detailedHealthZoneLayer);
-      departmentLayer.eachLayer(layer=>{const l=byDepartment[layer.feature.properties.DPTOCRC]; const c=layer.getBounds().getCenter(); const label=addLabel(c,loteTitle(l),'lot-label',[220,28]); label.addTo(map); labels.lotes.push(label);});
+      departmentLayer.eachLayer(layer=>{const l=byDepartment[layer.feature.properties.DPTOCRC]; const c=loteLabelCoordinates[kind]?.[l.numero]||layer.getBounds().getCenter(); const label=addLabel(c,loteTitle(l),'lot-label',[220,28]); label.addTo(map); labels.lotes.push(label);});
       municipalityLayer.eachLayer(layer=>{const c=layer.getBounds().getCenter(); const label=addLabel(c,cleanText(layer.feature.properties.NOMBRE),'municipio-label',[150,18]); labels.municipios.push(label);});
       detailedHealthZoneLayer.eachLayer(layer=>{const c=layer.getBounds().getCenter(); const label=addLabel(c,layer.feature.properties.NOMBRE,'municipio-label',[180,18]); labels.municipios.push(label);});
       source.hospitales.features.filter(h=>departments.some(d=>containsPoint(h.geometry.coordinates,d.geometry))).forEach(h=>{const [lng,lat]=h.geometry.coordinates; const marker=L.circleMarker([lat,lng],{radius:6,color:'#fff',weight:1.5,fillColor:'#1477be',fillOpacity:1}).bindPopup(`<b>${h.properties.CEN_DESCLA}</b><br>${h.properties.CEN_NOMBCA||''}`); marker.addTo(map); activeLayers.push(marker);});
