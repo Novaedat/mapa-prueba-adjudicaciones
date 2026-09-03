@@ -94,6 +94,7 @@
     const labels = { lotes:[], municipios:[] };
     function clearMap() { activeLayers.forEach(layer => map.removeLayer(layer)); activeLayers=[]; labels.lotes.forEach(x=>map.removeLayer(x)); labels.municipios.forEach(x=>map.removeLayer(x)); labels.lotes=[]; labels.municipios=[]; }
     function addLabel(latlng, text, className, size) { const icon=L.divIcon({className, html:text, iconSize:size, iconAnchor:[size[0]/2,size[1]/2]}); return L.marker(latlng,{icon,interactive:false}); }
+    function cleanText(value) { return typeof value==='string' ? value.replaceAll('Ã‡','Ç').replaceAll('Ã‘','Ñ') : value; }
     function loteTitle(l) { return l.titulo||`Lote ${l.numero} · ${l.nombre}`; }
     function showLotePanel(l, kind) {
       const d=loteDetails[kind][l.numero]||{};
@@ -129,13 +130,13 @@
       const detailedHealthZoneLayer=L.geoJSON({type:'FeatureCollection',features:detailedHealthZones},{style:{color:'#253346',weight:.75,fillOpacity:0},onEachFeature:(f,layer)=>{const l=byDepartment[f.properties.DPTOCRC]; layer.bindPopup(`<b>${f.properties.NOMBRE}</b><br>${loteTitle(l)}`); layer.on('click',()=>showLotePanel(l,kind));}}).addTo(map);
       activeLayers.push(detailedHealthZoneLayer);
       departmentLayer.eachLayer(layer=>{const l=byDepartment[layer.feature.properties.DPTOCRC]; const c=layer.getBounds().getCenter(); const label=addLabel(c,loteTitle(l),'lot-label',[220,28]); label.addTo(map); labels.lotes.push(label);});
-      municipalityLayer.eachLayer(layer=>{const c=layer.getBounds().getCenter(); const label=addLabel(c,layer.feature.properties.NOMBRE,'municipio-label',[150,18]); labels.municipios.push(label);});
+      municipalityLayer.eachLayer(layer=>{const c=layer.getBounds().getCenter(); const label=addLabel(c,cleanText(layer.feature.properties.NOMBRE),'municipio-label',[150,18]); labels.municipios.push(label);});
       detailedHealthZoneLayer.eachLayer(layer=>{const c=layer.getBounds().getCenter(); const label=addLabel(c,layer.feature.properties.NOMBRE,'municipio-label',[180,18]); labels.municipios.push(label);});
       source.hospitales.features.filter(h=>departments.some(d=>containsPoint(h.geometry.coordinates,d.geometry))).forEach(h=>{const [lng,lat]=h.geometry.coordinates; const marker=L.circleMarker([lat,lng],{radius:6,color:'#fff',weight:1.5,fillColor:'#1477be',fillOpacity:1}).bindPopup(`<b>${h.properties.CEN_DESCLA}</b><br>${h.properties.CEN_NOMBCA||''}`); marker.addTo(map); activeLayers.push(marker);});
       lotes.forEach(l=>{const d=loteDetails[kind][l.numero]||{}; if(!d.direccion||!Array.isArray(d.coordenadas))return; const marker=L.circleMarker(d.coordenadas,{radius:6,color:'#fff',weight:1.5,fillColor:'#ffc72c',fillOpacity:1}).bindPopup(`<b>Local NOVAEDAT · Lote ${l.numero}</b><br>${d.direccion}`); marker.on('click',()=>showLotePanel(l,kind)); marker.addTo(map); activeLayers.push(marker);});
       map.fitBounds(departmentLayer.getBounds(),{padding:[18,18]}); updateVisibility();
     }
-    const dataVersion='20260903-arnau';
+    const dataVersion='20260903-arnau-2';
     Promise.all(['departamentos-25830.geojson','municipios-25830.geojson','hospitales-25830.geojson','zonas-salud-valencia-25830.geojson','zonas-salud-alicante-25830.geojson'].map(name=>fetch(`datos-mapa/${name}?v=${dataVersion}`).then(r=>{if(!r.ok)throw new Error(name);return r.json();}))).then(([d,m,h,zv,za])=>{source={departamentos:{...d,features:d.features.map(convertFeature)},municipios:{...m,features:m.features.map(convertFeature)},hospitales:{...h,features:h.features.map(convertFeature)},zonasValencia:{...zv,features:zv.features.map(convertFeature)},zonasAlicante:{...za,features:za.features.map(convertFeature)}}; draw('adultos');}).catch(()=>alert('No se pudieron cargar las capas cartográficas. Comprueba que la carpeta datos-mapa está junto al HTML.'));
     document.getElementById('adultos').onclick=()=>{document.getElementById('adultos').setAttribute('aria-selected','true');document.getElementById('infancia').setAttribute('aria-selected','false');draw('adultos');};
     document.getElementById('infancia').onclick=()=>{document.getElementById('infancia').setAttribute('aria-selected','true');document.getElementById('adultos').setAttribute('aria-selected','false');draw('infancia');};
