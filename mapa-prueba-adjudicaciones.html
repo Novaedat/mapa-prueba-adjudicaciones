@@ -32,7 +32,7 @@
     <p>Áreas sanitarias asignadas; amplía el mapa para ver sus municipios y hospitales.</p>
     <nav aria-label="Tipo de adjudicación">
       <button id="adultos" type="button" aria-selected="true">Adultos · 15 lotes</button>
-      <button id="infancia" type="button" aria-selected="false">Infancia y adolescencia · 8 lotes</button>
+      <button id="infancia" type="button" aria-selected="false">Infancia y adolescencia · 9 lotes</button>
     </nav>
   </header>
   <main id="map" aria-label="Mapa territorial de adjudicaciones"></main>
@@ -50,7 +50,7 @@
         [1,'Castellón','02'],[2,'Sagunto','04'],[3,'Clínico','05'],[5,'Hospital General','09'],[6,'Peset','10'],[7,'La Ribera','11'],[8,'Gandia','12'],[9,'Xàtiva','14'],[10,'Alcoi','15'],[11,'Vila-Joiosa','16'],[12,'Alicante San Juan','17'],[15,'Elx','20'],[16,'Orihuela','21'],[17,'Dénia','13'],[18,'Torrevieja','22']
       ],
       infancia:[
-        [1,'Castellón','02'],[2,'La Plana','03'],[3,'Sagunto','04'],[7,'General','09'],[9,'La Ribera','11'],[10,'Gandia','12'],[13,'San Juan','17'],[17,'Dénia','13']
+        [1,'Castellón','02'],[2,'La Plana','03'],[3,'Sagunto','04'],[7,'General','09'],[9,'La Ribera','11'],[10,'Gandia','12'],[13,'San Juan','17'],[17,'Dénia','13'],[5,'Arnau','06','Lote 5 - Arnau']
       ]
     };
     const loteDetails = {
@@ -75,6 +75,7 @@
         1:{locales:'Sí',lic:'Contrato',autorizacion:'Solicitada',prevision:'13 oct. 2026',tasas:'Pagadas',direccion:'C/ Bellver, 22 · Entresuelo 3 · 12003 Castelló de la Plana',coordenadas:[39.983239,-0.034393]},
         2:{locales:'Sí',lic:'Contrato',autorizacion:'Solicitada',prevision:'5 oct. 2026',tasas:'Pagadas',direccion:'C/ San Manuel, 67 · Bajo · Vila-real (Castellón)',coordenadas:[39.936959,-0.108105]},
         3:{locales:'Sí',lic:'Contrato',autorizacion:'Solicitada',prevision:'5 oct. 2026',direccion:'Av. Juan de Austria, 26 · Piso A · Sagunto (Valencia)',coordenadas:[39.666240,-0.235209]},
+        5:{locales:'No',lic:'Propuesto Adjudicación'},
         7:{locales:'Sí',lic:'Contrato',autorizacion:'Solicitada',prevision:'26 oct. 2026',direccion:'C/ Azcárraga, 37 · Bajo · 46008 Valencia',coordenadas:[39.474073,-0.391001]},
         9:{locales:'No',lic:'Pendiente de adjudicación'},
         10:{locales:'No',lic:'Pendiente de adjudicación'},
@@ -93,6 +94,7 @@
     const labels = { lotes:[], municipios:[] };
     function clearMap() { activeLayers.forEach(layer => map.removeLayer(layer)); activeLayers=[]; labels.lotes.forEach(x=>map.removeLayer(x)); labels.municipios.forEach(x=>map.removeLayer(x)); labels.lotes=[]; labels.municipios=[]; }
     function addLabel(latlng, text, className, size) { const icon=L.divIcon({className, html:text, iconSize:size, iconAnchor:[size[0]/2,size[1]/2]}); return L.marker(latlng,{icon,interactive:false}); }
+    function loteTitle(l) { return l.titulo||`Lote ${l.numero} · ${l.nombre}`; }
     function showLotePanel(l, kind) {
       const d=loteDetails[kind][l.numero]||{};
       const area=kind==='adultos'?'Adultos':'Infancia y adolescencia';
@@ -106,27 +108,27 @@
       const address=d.direccion||'Sin dirección de local registrada';
       const note=d.observaciones?`<div class="panel-section"><h3>Observaciones</h3><p class="address">${d.observaciones}</p></div>`:'';
       const p=document.getElementById('lote-panel');
-      p.innerHTML=`<button id="close-panel" type="button" aria-label="Cerrar ficha">×</button><h2>Lote ${l.numero} · ${l.nombre}</h2><p class="area">${area}</p><div class="facts">${facts.map(([label,value])=>`<div class="fact"><dt>${label}</dt><dd>${value}</dd></div>`).join('')}</div><div class="panel-section"><h3>Dirección del local</h3><p class="address ${d.direccion?'':'empty'}">${address}</p></div><div class="panel-section"><h3>Hospital de referencia</h3>${hospitalHtml}</div>${note}`;
+      p.innerHTML=`<button id="close-panel" type="button" aria-label="Cerrar ficha">×</button><h2>${loteTitle(l)}</h2><p class="area">${area}</p><div class="facts">${facts.map(([label,value])=>`<div class="fact"><dt>${label}</dt><dd>${value}</dd></div>`).join('')}</div><div class="panel-section"><h3>Dirección del local</h3><p class="address ${d.direccion?'':'empty'}">${address}</p></div><div class="panel-section"><h3>Hospital de referencia</h3>${hospitalHtml}</div>${note}`;
       p.classList.add('open');
       document.getElementById('close-panel').onclick=()=>p.classList.remove('open');
     }
     function updateVisibility() { const close = map.getZoom() >= 10; labels.lotes.forEach(label => label.getElement()?.style.setProperty('opacity', close ? '.36' : '1')); labels.municipios.forEach(label => close ? label.addTo(map) : map.removeLayer(label)); }
     function draw(kind) {
       clearMap();
-      const lotes=loteConfig[kind].map(([numero,nombre,departamento],index)=>({numero,nombre,departamento,color:palette[index]}));
+      const lotes=loteConfig[kind].map(([numero,nombre,departamento,titulo],index)=>({numero,nombre,departamento,titulo,color:palette[index]}));
       const byDepartment=Object.fromEntries(lotes.map(x=>[x.departamento,x]));
       const departments=source.departamentos.features.filter(f=>byDepartment[f.properties.DPTOCRC]);
-      const splitMunicipalities=new Set(['46250','03014','03065','03099','03121','03133']);
+      const splitMunicipalities=new Set(['46250','46169','46237','03014','03065','03099','03121','03133']);
       const municipalities=source.municipios.features.filter(f=>!splitMunicipalities.has(f.properties.MUNIINE)&&byDepartment[f.properties.DPTOCRC]);
       const detailedHealthZones=[...source.zonasValencia.features,...source.zonasAlicante.features].filter(f=>byDepartment[f.properties.DPTOCRC]);
       hospitalesPorDepartamento=Object.fromEntries(lotes.map(l=>[l.departamento,source.hospitales.features.filter(h=>String(h.properties.ARS_CODI).padStart(2,'0')===l.departamento)]));
-      const departmentLayer=L.geoJSON({type:'FeatureCollection',features:departments},{style:f=>{const l=byDepartment[f.properties.DPTOCRC]; return {color:l.color,weight:2.4,fillColor:l.color,fillOpacity:.20};},onEachFeature:(f,layer)=>{const l=byDepartment[f.properties.DPTOCRC]; layer.bindPopup(`<b>Lote ${l.numero} · ${l.nombre}</b><br>Área: ${kind==='adultos'?'Adultos':'Infancia y adolescencia'}`);}}).addTo(map);
+      const departmentLayer=L.geoJSON({type:'FeatureCollection',features:departments},{style:f=>{const l=byDepartment[f.properties.DPTOCRC]; return {color:l.color,weight:2.4,fillColor:l.color,fillOpacity:.37};},onEachFeature:(f,layer)=>{const l=byDepartment[f.properties.DPTOCRC]; layer.bindPopup(`<b>${loteTitle(l)}</b><br>Área: ${kind==='adultos'?'Adultos':'Infancia y adolescencia'}`); layer.on('click',()=>showLotePanel(l,kind));}}).addTo(map);
       activeLayers.push(departmentLayer);
-      const municipalityLayer=L.geoJSON({type:'FeatureCollection',features:municipalities},{style:f=>{const l=byDepartment[f.properties.DPTOCRC]; return {color:'#253346',weight:.75,fillColor:l.color,fillOpacity:.37};},onEachFeature:(f,layer)=>layer.on('click',()=>showLotePanel(byDepartment[f.properties.DPTOCRC],kind))}).addTo(map);
+      const municipalityLayer=L.geoJSON({type:'FeatureCollection',features:municipalities},{interactive:false,style:{color:'#253346',weight:.75,fillOpacity:0}}).addTo(map);
       activeLayers.push(municipalityLayer);
-      const detailedHealthZoneLayer=L.geoJSON({type:'FeatureCollection',features:detailedHealthZones},{style:f=>{const l=byDepartment[f.properties.DPTOCRC]; return {color:'#253346',weight:.75,fillColor:l.color,fillOpacity:.37};},onEachFeature:(f,layer)=>{const l=byDepartment[f.properties.DPTOCRC]; layer.bindPopup(`<b>${f.properties.NOMBRE}</b><br>Lote ${l.numero} · ${l.nombre}`); layer.on('click',()=>showLotePanel(l,kind));}}).addTo(map);
+      const detailedHealthZoneLayer=L.geoJSON({type:'FeatureCollection',features:detailedHealthZones},{style:{color:'#253346',weight:.75,fillOpacity:0},onEachFeature:(f,layer)=>{const l=byDepartment[f.properties.DPTOCRC]; layer.bindPopup(`<b>${f.properties.NOMBRE}</b><br>${loteTitle(l)}`); layer.on('click',()=>showLotePanel(l,kind));}}).addTo(map);
       activeLayers.push(detailedHealthZoneLayer);
-      departmentLayer.eachLayer(layer=>{const l=byDepartment[layer.feature.properties.DPTOCRC]; const c=layer.getBounds().getCenter(); const label=addLabel(c,`Lote ${l.numero} · ${l.nombre}`,'lot-label',[220,28]); label.addTo(map); labels.lotes.push(label);});
+      departmentLayer.eachLayer(layer=>{const l=byDepartment[layer.feature.properties.DPTOCRC]; const c=layer.getBounds().getCenter(); const label=addLabel(c,loteTitle(l),'lot-label',[220,28]); label.addTo(map); labels.lotes.push(label);});
       municipalityLayer.eachLayer(layer=>{const c=layer.getBounds().getCenter(); const label=addLabel(c,layer.feature.properties.NOMBRE,'municipio-label',[150,18]); labels.municipios.push(label);});
       detailedHealthZoneLayer.eachLayer(layer=>{const c=layer.getBounds().getCenter(); const label=addLabel(c,layer.feature.properties.NOMBRE,'municipio-label',[180,18]); labels.municipios.push(label);});
       source.hospitales.features.filter(h=>departments.some(d=>containsPoint(h.geometry.coordinates,d.geometry))).forEach(h=>{const [lng,lat]=h.geometry.coordinates; const marker=L.circleMarker([lat,lng],{radius:6,color:'#fff',weight:1.5,fillColor:'#1477be',fillOpacity:1}).bindPopup(`<b>${h.properties.CEN_DESCLA}</b><br>${h.properties.CEN_NOMBCA||''}`); marker.addTo(map); activeLayers.push(marker);});
